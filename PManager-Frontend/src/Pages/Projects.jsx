@@ -1,10 +1,31 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from 'react-router-dom';
+import { 
+  Container, 
+  Typography, 
+  TextField, 
+  Button, 
+  Paper, 
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  Alert,
+  Chip,
+  CardActionArea
+} from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import AddIcon from '@mui/icons-material/Add'
+import FolderIcon from '@mui/icons-material/Folder'
 
 function Projects() {
   const [projects, setProjects] = useState([])
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [expanded, setExpanded] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => { fetchProjects() }, [])
 
@@ -20,97 +41,141 @@ function Projects() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description })
-    }).then(() => { setName(""); setDescription(""); fetchProjects() })
+    }).then(() => { 
+      setName(""); 
+      setDescription(""); 
+      setShowForm(false);
+      fetchProjects() 
+    })
   }
 
-  function deleteProject(id) {
+  function deleteProject(id, event) {
     fetch(`http://localhost:8080/api/projects/${id}`, { method: "DELETE" })
       .then(() => fetchProjects())
   }
 
-  function toggleExpand(id) {
-    setExpanded(expanded === id ? null : id)
+  const handleCardClick = (projectId) => {
+    navigate(`/project/${projectId}`);
   }
 
   return (
-    <div style={{ maxWidth: "600px", margin: "60px auto", fontFamily: "sans-serif", padding: "0 20px" }}>
-      <h1 style={{ fontSize: "24px", fontWeight: "600", marginBottom: "24px" }}>Projects</h1>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "32px" }}>
-        <input
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="Project name"
-          style={{
-            padding: "10px 14px", border: "1px solid #ddd",
-            borderRadius: "6px", fontSize: "14px", outline: "none"
-          }}
-        />
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          placeholder="Description (optional)"
-          rows={3}
-          style={{
-            padding: "10px 14px", border: "1px solid #ddd", borderRadius: "6px",
-            fontSize: "14px", outline: "none", resize: "none", fontFamily: "sans-serif"
-          }}
-        />
-        <button
-          onClick={addProject}
-          style={{
-            padding: "10px 20px", backgroundColor: "#000", color: "#fff",
-            border: "none", borderRadius: "6px", fontSize: "14px", cursor: "pointer"
-          }}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h4" component="h1">
+          Projects
+        </Typography>
+        <Button 
+          variant="contained" 
+          startIcon={<AddIcon />}
+          onClick={() => setShowForm(!showForm)}
         >
-          Add Project
-        </button>
-      </div>
+          New Project
+        </Button>
+      </Box>
 
-      {projects.length === 0 && (
-        <p style={{ color: "#999", fontSize: "14px" }}>No projects yet. Add one above.</p>
+      {showForm && (
+        <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Create New Project
+          </Typography>
+          <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="Project name"
+              variant="outlined"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              autoFocus
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              variant="outlined"
+              multiline
+              rows={3}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Button onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={addProject}
+                disabled={!name}
+              >
+                Create Project
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
       )}
 
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        {projects.map(p => (
-          <li key={p.id} style={{
-            border: "1px solid #eee", borderRadius: "6px",
-            marginBottom: "8px", overflow: "hidden"
-          }}>
-            <div
-              onClick={() => toggleExpand(p.id)}
-              style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "14px 16px", cursor: "pointer", fontSize: "14px"
+      {projects.length === 0 && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          No projects yet. Click "New Project" to create one.
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {projects.map(project => (
+          <Grid item xs={12} sm={6} md={4} key={project.id}>
+            <Card 
+              sx={{ 
+                height: 225, 
+                width: 300,
+                display: 'flex', 
+                flexDirection: 'column',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 6
+                }
               }}
             >
-              <span style={{ fontWeight: "500" }}>{p.name}</span>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <span style={{ color: "#999", fontSize: "12px" }}>{expanded === p.id ? "▲" : "▼"}</span>
-                <button
-                  onClick={e => { e.stopPropagation(); deleteProject(p.id) }}
-                  style={{
-                    background: "none", border: "1px solid #ddd", borderRadius: "4px",
-                    padding: "4px 10px", fontSize: "12px", cursor: "pointer", color: "#666"
-                  }}
+              <CardActionArea onClick={() => handleCardClick(project.id)}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <FolderIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6" component="h2" noWrap>
+                      {project.name}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
+                    {project.description || "No description provided."}
+                  </Typography>
+                  <Chip 
+                    label={`Tasks: ${project.tasks?.length || 0}`} 
+                    size="small" 
+                    sx={{ mt: 2 }}
+                  />
+                </CardContent>
+              </CardActionArea>
+              <CardActions sx={{ justifyContent: 'flex-end', p: 1 }}>
+                <IconButton 
+                  size="small" 
+                  color="error"
+                  onClick={(e) => deleteProject(project.id, e)}
                 >
-                  Delete
-                </button>
-              </div>
-            </div>
-
-            {expanded === p.id && (
-              <div style={{
-                padding: "12px 16px", borderTop: "1px solid #eee",
-                fontSize: "14px", color: "#555", backgroundColor: "#fafafa"
-              }}>
-                {p.description ? p.description : <span style={{ color: "#bbb" }}>No description added.</span>}
-              </div>
-            )}
-          </li>
+                  <DeleteIcon />
+                </IconButton>
+              </CardActions>
+            </Card>
+          </Grid>
         ))}
-      </ul>
-    </div>
+      </Grid>
+    </Container>
   )
 }
 
