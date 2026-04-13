@@ -47,6 +47,8 @@ jobs:
           distribution: 'temurin'
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+      - name: Compile
+        run: ./gradlew classes
       - name: SonarQube analysis
         run: ./gradlew sonar
         env:
