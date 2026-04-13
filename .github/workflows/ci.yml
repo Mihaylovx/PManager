@@ -2,6 +2,10 @@ name: CI
 
 on: [push]
 
+defaults:
+  run:
+    working-directory: PManager-Backend
+
 jobs:
   build:
     runs-on: ubuntu-latest
