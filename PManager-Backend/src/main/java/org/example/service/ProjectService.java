@@ -1,47 +1,49 @@
 package org.example.service;
 
-import org.example.entity.Project;
-import org.example.entity.Task;
+import org.example.domain.Project;
+import org.example.entity.ProjectEntity;
+import org.example.mapper.ProjectMapper;
 import org.example.repository.ProjectRepository;
-import org.example.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final TaskRepository taskRepository;
 
-    public ProjectService(ProjectRepository projectRepository, TaskRepository taskRepository) {
+    public ProjectService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
-        this.taskRepository = taskRepository;
     }
 
     public List<Project> getAllProjects() {
-        return projectRepository.findAll();
+        return projectRepository.findAll().stream()
+                .map(ProjectMapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     public Project createProject(Project project) {
-        return projectRepository.save(project);
+        ProjectEntity saved = projectRepository.save(ProjectMapper.toEntity(project));
+        return ProjectMapper.toDomain(saved);
     }
 
     public void deleteProject(Long id) {
         projectRepository.deleteById(id);
     }
 
-    // New methods
     public Optional<Project> getProjectById(Long id) {
-        return projectRepository.findById(id);
+        return projectRepository.findById(id)
+                .map(ProjectMapper::toDomain);
     }
 
     public Optional<Project> updateProject(Long id, Project projectDetails) {
-        return projectRepository.findById(id).map(project -> {
-            project.setName(projectDetails.getName());
-            project.setDescription(projectDetails.getDescription());
-            return projectRepository.save(project);
+        return projectRepository.findById(id).map(entity -> {
+            entity.setName(projectDetails.getName());
+            entity.setDescription(projectDetails.getDescription());
+            return ProjectMapper.toDomain(projectRepository.save(entity));
         });
     }
 }

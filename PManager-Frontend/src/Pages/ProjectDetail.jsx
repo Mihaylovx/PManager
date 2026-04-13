@@ -36,7 +36,6 @@ function ProjectDetail() {
   }, [id]);
 
   function fetchProject() {
-    console.log(`Fetching project: http://localhost:8080/api/projects/${id}`); 
     fetch(`http://localhost:8080/api/projects/${id}`)
       .then(res => {
         if (!res.ok) throw new Error('Project not found');

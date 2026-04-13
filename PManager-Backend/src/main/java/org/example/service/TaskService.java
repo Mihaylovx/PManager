@@ -1,7 +1,8 @@
 package org.example.service;
 
-import org.example.entity.Project;
-import org.example.entity.Task;
+import org.example.domain.Task;
+import org.example.entity.TaskEntity;
+import org.example.mapper.TaskMapper;
 import org.example.repository.ProjectRepository;
 import org.example.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -19,14 +20,15 @@ public class TaskService {
     }
 
     public Optional<Task> addTask(Long projectId, Task task) {
-        return projectRepository.findById(projectId).map(project -> {
-            task.setProject(project);
-            return taskRepository.save(task);
+        return projectRepository.findById(projectId).map(projectEntity -> {
+            TaskEntity taskEntity = TaskMapper.toEntity(task);
+            taskEntity.setProject(projectEntity);
+            return TaskMapper.toDomain(taskRepository.save(taskEntity));
         });
     }
 
     public boolean deleteTask(Long projectId, Long taskId) {
-        Optional<Task> task = taskRepository.findById(taskId);
+        Optional<TaskEntity> task = taskRepository.findById(taskId);
         if (task.isPresent() && task.get().getProject().getId().equals(projectId)) {
             taskRepository.deleteById(taskId);
             return true;
@@ -35,11 +37,11 @@ public class TaskService {
     }
 
     public Optional<Task> updateTaskStatus(Long projectId, Long taskId, boolean completed) {
-        Optional<Task> task = taskRepository.findById(taskId);
+        Optional<org.example.entity.TaskEntity> task = taskRepository.findById(taskId);
         if (task.isPresent() && task.get().getProject().getId().equals(projectId)) {
-            Task existingTask = task.get();
+            TaskEntity existingTask = task.get();
             existingTask.setCompleted(completed);
-            return Optional.of(taskRepository.save(existingTask));
+            return Optional.of(TaskMapper.toDomain(taskRepository.save(existingTask)));
         }
         return Optional.empty();
     }
