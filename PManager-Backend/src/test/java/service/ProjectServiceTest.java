@@ -3,7 +3,7 @@ package service;
 import org.example.domain.Project;
 import org.example.entity.ProjectEntity;
 import org.example.repository.ProjectRepository;
-import org.example.service.ProjectService;
+import org.example.service.ProjectServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,7 @@ public class ProjectServiceTest {
     private ProjectRepository projectRepository;
 
     @InjectMocks
-    private ProjectService projectService;
+    private ProjectServiceImpl projectService;
 
     private ProjectEntity projectEntity;
     private Project project;
@@ -86,8 +86,6 @@ public class ProjectServiceTest {
 
     @Test
     void deleteProject_existingId_callsDeleteById() {
-        // Arrange
-        doNothing().when(projectRepository).deleteById(1L);
 
         // Act
         projectService.deleteProject(1L);

@@ -24,7 +24,7 @@ public class TaskController {
     @PostMapping
     public ResponseEntity<?> addTask(@PathVariable Long id, @Valid @RequestBody TaskDTO taskDTO) {
         try {
-            Optional<TaskDTO> savedTask = taskService.addTask(id, TaskMapper.toDomain(taskDTO))
+            Optional<TaskDTO> savedTask = taskService.createTask(id, TaskMapper.toDomain(taskDTO))
                     .map(TaskMapper::toDTO);
             if (savedTask.isPresent()) {
                 return ResponseEntity.status(HttpStatus.CREATED).body(savedTask.get());

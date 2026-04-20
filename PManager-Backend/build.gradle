@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.2.3'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.sonarqube' version '6.0.1.5171'
+    id 'jacoco'
 }
 
 group = 'org.example'
@@ -35,6 +36,19 @@ sonar {
         property 'sonar.projectKey', 'Mihaylovx_PManager'
         property 'sonar.organization', 'mihaylovx'
         property 'sonar.host.url', 'https://sonarcloud.io'
+        property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.11'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
     }
 }
 
