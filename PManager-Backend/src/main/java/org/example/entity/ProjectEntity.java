@@ -5,7 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @NoArgsConstructor
@@ -23,6 +25,19 @@ public class ProjectEntity {
     private String description;
     @Setter
     private LocalDateTime lastUpdated;
+
+    @Setter
+    @Column(name = "manager_email")
+    private String managerEmail;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "project_members",
+            joinColumns = @JoinColumn(name = "project_id")
+    )
+    @Column(name = "member_email")
+    @Setter
+    private Set<String> memberEmails = new HashSet<>();
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Setter
