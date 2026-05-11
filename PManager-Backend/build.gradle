@@ -10,6 +10,9 @@ group = 'org.example'
 version = '1.0-SNAPSHOT'
 
 java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
     sourceCompatibility = '21'
     targetCompatibility = '21'
 }
