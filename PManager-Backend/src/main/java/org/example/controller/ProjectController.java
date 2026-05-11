@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -22,8 +23,11 @@ public class ProjectController {
     }
 
     @GetMapping
-    public List<ProjectDTO> getAllProjects() {
-        return projectService.getAllProjects().stream()
+    public List<ProjectDTO> getAllProjects(@RequestParam(value = "user", required = false) String userEmail) {
+        List<org.example.domain.Project> projects = (userEmail == null || userEmail.isBlank())
+                ? projectService.getAllProjects()
+                : projectService.getProjectsForUser(userEmail);
+        return projects.stream()
                 .map(ProjectMapper::toDTO)
                 .toList();
     }
@@ -37,11 +41,15 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<ProjectDTO> createProject(@Valid @RequestBody ProjectDTO projectDTO) {
-        ProjectDTO saved = ProjectMapper.toDTO(
-                projectService.createProject(ProjectMapper.toDomain(projectDTO))
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    public ResponseEntity<?> createProject(@Valid @RequestBody ProjectDTO projectDTO) {
+        try {
+            ProjectDTO saved = ProjectMapper.toDTO(
+                    projectService.createProject(ProjectMapper.toDomain(projectDTO))
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -56,5 +64,21 @@ public class ProjectController {
                 .map(ProjectMapper::toDTO)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/invite")
+    public ResponseEntity<?> inviteMember(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body("Email is required.");
+        }
+        try {
+            return projectService.inviteMember(id, email)
+                    .map(ProjectMapper::toDTO)
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

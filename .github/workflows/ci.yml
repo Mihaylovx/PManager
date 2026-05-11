@@ -50,6 +50,6 @@ jobs:
       - name: Compile
         run: ./gradlew classes
       - name: SonarQube analysis
-        run: ./gradlew sonar
+        run: ./gradlew test jacocoTestReport sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -20,5 +21,7 @@ public class ProjectDTO {
     private String description;
 
     private LocalDateTime lastUpdated;
+    private String managerEmail;
+    private Set<String> memberEmails;
     private List<TaskDTO> tasks;
 }
