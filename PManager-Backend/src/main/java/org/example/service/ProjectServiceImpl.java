@@ -24,7 +24,10 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     public List<Project> getProjectsForUser(String email) {
-        return projectDao.findAllForUser(email);
+        return projectDao.findAll().stream()
+                .filter(p -> email.equals(p.getManagerEmail())
+                        || p.getMemberEmails().contains(email))
+                .toList();
     }
 
     public Project createProject(Project project) {

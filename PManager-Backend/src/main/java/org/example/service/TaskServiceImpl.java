@@ -20,10 +20,15 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public boolean deleteTask(Long projectId, Long taskId) {
-        return taskDao.deleteFromProject(projectId, taskId);
+        return taskDao.findById(taskId)
+                .filter(t -> projectId.equals(t.getProjectId()))
+                .map(t -> { taskDao.deleteById(taskId); return true; })
+                .orElse(false);
     }
 
     public Optional<Task> updateTaskStatus(Long projectId, Long taskId, boolean completed) {
-        return taskDao.updateStatus(projectId, taskId, completed);
+        return taskDao.findById(taskId)
+                .filter(t -> projectId.equals(t.getProjectId()))
+                .flatMap(t -> taskDao.updateStatus(taskId, completed));
     }
 }

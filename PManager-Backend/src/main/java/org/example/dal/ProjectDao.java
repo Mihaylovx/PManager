@@ -25,14 +25,6 @@ public class ProjectDao {
                 .toList();
     }
 
-    public List<Project> findAllForUser(String email) {
-        return projectRepository.findAll().stream()
-                .filter(p -> email.equals(p.getManagerEmail())
-                        || (p.getMemberEmails() != null && p.getMemberEmails().contains(email)))
-                .map(ProjectMapper::toDomain)
-                .toList();
-    }
-
     public Optional<Project> findById(Long id) {
         return projectRepository.findById(id)
                 .map(ProjectMapper::toDomain);
@@ -56,9 +48,6 @@ public class ProjectDao {
 
     public Optional<Project> addMember(Long id, String email) {
         return projectRepository.findById(id).map(entity -> {
-            if (entity.getMemberEmails() == null) {
-                entity.setMemberEmails(new HashSet<>());
-            }
             entity.getMemberEmails().add(email);
             return ProjectMapper.toDomain(projectRepository.save(entity));
         });

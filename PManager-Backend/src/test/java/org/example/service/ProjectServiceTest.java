@@ -1,5 +1,4 @@
-package service;
-
+package org.example.service;
 import org.example.dal.ProjectDao;
 import org.example.domain.Project;
 import org.example.service.ProjectServiceImpl;

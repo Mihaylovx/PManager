@@ -1,5 +1,4 @@
-package service;
-
+package org.example.service;
 import org.example.dal.UserDao;
 import org.example.domain.User;
 import org.example.service.UserServiceImpl;

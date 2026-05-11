@@ -28,22 +28,18 @@ public class TaskDao {
         });
     }
 
-    public boolean deleteFromProject(Long projectId, Long taskId) {
-        Optional<TaskEntity> task = taskRepository.findById(taskId);
-        if (task.isPresent() && task.get().getProject().getId().equals(projectId)) {
-            taskRepository.deleteById(taskId);
-            return true;
-        }
-        return false;
+    public Optional<Task> findById(Long taskId) {
+        return taskRepository.findById(taskId).map(TaskMapper::toDomain);
     }
 
-    public Optional<Task> updateStatus(Long projectId, Long taskId, boolean completed) {
-        Optional<TaskEntity> existing = taskRepository.findById(taskId);
-        if (existing.isPresent() && existing.get().getProject().getId().equals(projectId)) {
-            TaskEntity entity = existing.get();
+    public void deleteById(Long taskId) {
+        taskRepository.deleteById(taskId);
+    }
+
+    public Optional<Task> updateStatus(Long taskId, boolean completed) {
+        return taskRepository.findById(taskId).map(entity -> {
             entity.setCompleted(completed);
-            return Optional.of(TaskMapper.toDomain(taskRepository.save(entity)));
-        }
-        return Optional.empty();
+            return TaskMapper.toDomain(taskRepository.save(entity));
+        });
     }
 }

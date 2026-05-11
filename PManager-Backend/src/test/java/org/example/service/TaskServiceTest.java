@@ -1,5 +1,4 @@
-package service;
-
+package org.example.service;
 import org.example.dal.TaskDao;
 import org.example.domain.Task;
 import org.example.service.TaskServiceImpl;
@@ -60,21 +59,33 @@ public class TaskServiceTest {
 
     @Test
     void deleteTask_existingTask_returnsTrue() {
-        when(taskDao.deleteFromProject(10L, 1L)).thenReturn(true);
+        when(taskDao.findById(1L)).thenReturn(Optional.of(task));
 
         boolean result = taskService.deleteTask(10L, 1L);
 
         assertTrue(result);
-        verify(taskDao, times(1)).deleteFromProject(10L, 1L);
+        verify(taskDao, times(1)).findById(1L);
+        verify(taskDao, times(1)).deleteById(1L);
     }
 
     @Test
     void deleteTask_nonExistingTask_returnsFalse() {
-        when(taskDao.deleteFromProject(10L, 99L)).thenReturn(false);
+        when(taskDao.findById(99L)).thenReturn(Optional.empty());
 
         boolean result = taskService.deleteTask(10L, 99L);
 
         assertFalse(result);
+        verify(taskDao, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteTask_wrongProject_returnsFalse() {
+        when(taskDao.findById(1L)).thenReturn(Optional.of(task));
+
+        boolean result = taskService.deleteTask(99L, 1L);
+
+        assertFalse(result);
+        verify(taskDao, never()).deleteById(any());
     }
 
     @Test
@@ -85,21 +96,33 @@ public class TaskServiceTest {
                 .completed(true)
                 .projectId(10L)
                 .build();
-        when(taskDao.updateStatus(10L, 1L, true)).thenReturn(Optional.of(completed));
+        when(taskDao.findById(1L)).thenReturn(Optional.of(task));
+        when(taskDao.updateStatus(1L, true)).thenReturn(Optional.of(completed));
 
         Optional<Task> result = taskService.updateTaskStatus(10L, 1L, true);
 
         assertTrue(result.isPresent());
         assertTrue(result.get().isCompleted());
-        verify(taskDao, times(1)).updateStatus(10L, 1L, true);
+        verify(taskDao, times(1)).updateStatus(1L, true);
     }
 
     @Test
     void updateTaskStatus_nonExistingTask_returnsEmpty() {
-        when(taskDao.updateStatus(10L, 99L, true)).thenReturn(Optional.empty());
+        when(taskDao.findById(99L)).thenReturn(Optional.empty());
 
         Optional<Task> result = taskService.updateTaskStatus(10L, 99L, true);
 
         assertTrue(result.isEmpty());
+        verify(taskDao, never()).updateStatus(any(), anyBoolean());
+    }
+
+    @Test
+    void updateTaskStatus_wrongProject_returnsEmpty() {
+        when(taskDao.findById(1L)).thenReturn(Optional.of(task));
+
+        Optional<Task> result = taskService.updateTaskStatus(99L, 1L, true);
+
+        assertTrue(result.isEmpty());
+        verify(taskDao, never()).updateStatus(any(), anyBoolean());
     }
 }
