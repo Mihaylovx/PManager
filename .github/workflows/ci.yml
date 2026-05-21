@@ -53,3 +53,15 @@ jobs:
         run: ./gradlew test jacocoTestReport sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker:
+    runs-on: docker
+    needs: sonarqube-check
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: docker compose up --build -d
