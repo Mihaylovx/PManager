@@ -10,9 +10,11 @@ import java.util.Optional;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskDao taskDao;
+    private final ProjectNotificationService notificationService;
 
-    public TaskServiceImpl(TaskDao taskDao) {
+    public TaskServiceImpl(TaskDao taskDao, ProjectNotificationService notificationService) {
         this.taskDao = taskDao;
+        this.notificationService = notificationService;
     }
 
     public Optional<Task> createTask(Long projectId, Task task) {
@@ -22,13 +24,19 @@ public class TaskServiceImpl implements TaskService {
     public boolean deleteTask(Long projectId, Long taskId) {
         return taskDao.findById(taskId)
                 .filter(t -> projectId.equals(t.getProjectId()))
-                .map(t -> { taskDao.deleteById(taskId); return true; })
+                .map(t -> {
+                    taskDao.deleteById(taskId);
+                    notificationService.notifyTaskDeleted(projectId, taskId);
+                    return true;
+                })
                 .orElse(false);
     }
 
     public Optional<Task> updateTaskStatus(Long projectId, Long taskId, boolean completed) {
-        return taskDao.findById(taskId)
+        Optional<Task> updated = taskDao.findById(taskId)
                 .filter(t -> projectId.equals(t.getProjectId()))
                 .flatMap(t -> taskDao.updateStatus(taskId, completed));
+        updated.ifPresent(t -> notificationService.notifyTaskUpdated(projectId, t));
+        return updated;
     }
 }

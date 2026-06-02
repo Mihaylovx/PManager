@@ -25,6 +25,7 @@ import DeleteIcon from "@mui/icons-material/Delete"
 import HomeIcon from "@mui/icons-material/Home"
 import PersonIcon from "@mui/icons-material/Person"
 import { getUser } from "../auth"
+import { connectToProject } from "../services/websocket"
 
 function ProjectDetail() {
   const { id } = useParams()
@@ -40,6 +41,23 @@ function ProjectDetail() {
 
   useEffect(() => {
     fetchProject()
+  }, [id])
+
+  useEffect(() => {
+    return connectToProject(id, (event) => {
+      if (event.type === "TASK_ADDED") {
+        setTasks(prev => [...prev, event.data])
+      } else if (event.type === "TASK_DELETED") {
+        setTasks(prev => prev.filter(t => t.id !== event.data))
+      } else if (event.type === "TASK_UPDATED") {
+        setTasks(prev => prev.map(t => t.id === event.data.id ? event.data : t))
+      } else if (event.type === "MEMBER_ADDED") {
+        setProject(prev => ({
+          ...prev,
+          memberEmails: [...(prev.memberEmails || []), event.data]
+        }))
+      }
+    })
   }, [id])
 
   function fetchProject() {

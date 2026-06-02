@@ -13,10 +13,12 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectDao projectDao;
     private final UserService userService;
+    private final ProjectNotificationService notificationService;
 
-    public ProjectServiceImpl(ProjectDao projectDao, UserService userService) {
+    public ProjectServiceImpl(ProjectDao projectDao, UserService userService, ProjectNotificationService notificationService) {
         this.projectDao = projectDao;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     public List<Project> getAllProjects() {
