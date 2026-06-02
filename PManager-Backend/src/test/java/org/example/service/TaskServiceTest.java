@@ -1,6 +1,7 @@
 package org.example.service;
 import org.example.dal.TaskDao;
 import org.example.domain.Task;
+import org.example.service.ProjectNotificationService;
 import org.example.service.TaskServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,9 @@ public class TaskServiceTest {
 
     @Mock
     private TaskDao taskDao;
+
+    @Mock
+    private ProjectNotificationService notificationService;
 
     @InjectMocks
     private TaskServiceImpl taskService;
