@@ -116,4 +116,29 @@ public class UserServiceTest {
 
         assertFalse(userService.existsByEmail("ghost@example.com"));
     }
+
+    @Test
+    void updateHourlyRate_existingUser_returnsUpdatedUser() {
+        User updated = User.builder()
+                .email("test@example.com")
+                .firstName("John")
+                .lastName("Doe")
+                .hourlyRate(50.0)
+                .build();
+        when(userDao.updateHourlyRate("test@example.com", 50.0)).thenReturn(Optional.of(updated));
+
+        Optional<User> result = userService.updateHourlyRate("test@example.com", 50.0);
+
+        assertTrue(result.isPresent());
+        assertEquals(50.0, result.get().getHourlyRate());
+    }
+
+    @Test
+    void updateHourlyRate_nonExistentUser_returnsEmpty() {
+        when(userDao.updateHourlyRate("ghost@example.com", 50.0)).thenReturn(Optional.empty());
+
+        Optional<User> result = userService.updateHourlyRate("ghost@example.com", 50.0);
+
+        assertTrue(result.isEmpty());
+    }
 }

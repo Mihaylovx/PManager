@@ -2,6 +2,7 @@ package org.example.service;
 
 import org.example.dal.TaskDao;
 import org.example.domain.Task;
+import org.example.domain.TaskStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -32,10 +33,18 @@ public class TaskServiceImpl implements TaskService {
                 .orElse(false);
     }
 
-    public Optional<Task> updateTaskStatus(Long projectId, Long taskId, boolean completed) {
+    public Optional<Task> updateTaskStatus(Long projectId, Long taskId, TaskStatus status) {
         Optional<Task> updated = taskDao.findById(taskId)
                 .filter(t -> projectId.equals(t.getProjectId()))
-                .flatMap(t -> taskDao.updateStatus(taskId, completed));
+                .flatMap(t -> taskDao.updateStatus(taskId, status));
+        updated.ifPresent(t -> notificationService.notifyTaskUpdated(projectId, t));
+        return updated;
+    }
+
+    public Optional<Task> updateTask(Long projectId, Long taskId, TaskStatus status, Double hoursWorked, String assignedTo) {
+        Optional<Task> updated = taskDao.findById(taskId)
+                .filter(t -> projectId.equals(t.getProjectId()))
+                .flatMap(t -> taskDao.updateTask(taskId, status, hoursWorked, assignedTo));
         updated.ifPresent(t -> notificationService.notifyTaskUpdated(projectId, t));
         return updated;
     }

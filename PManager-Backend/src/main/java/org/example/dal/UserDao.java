@@ -27,4 +27,11 @@ public class UserDao {
     public User save(User user) {
         return UserMapper.toDomain(userRepository.save(UserMapper.toEntity(user)));
     }
+
+    public Optional<User> updateHourlyRate(String email, Double hourlyRate) {
+        return userRepository.findById(email).map(entity -> {
+            entity.setHourlyRate(hourlyRate);
+            return UserMapper.toDomain(userRepository.save(entity));
+        });
+    }
 }

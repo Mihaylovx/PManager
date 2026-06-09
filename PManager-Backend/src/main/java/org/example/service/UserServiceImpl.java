@@ -38,4 +38,9 @@ public class UserServiceImpl implements UserService {
     public boolean existsByEmail(String email) {
         return userDao.existsByEmail(email);
     }
+
+    @Override
+    public Optional<User> updateHourlyRate(String email, Double hourlyRate) {
+        return userDao.updateHourlyRate(email, hourlyRate);
+    }
 }

@@ -24,6 +24,10 @@ public class UserEntity {
     @Setter
     private String password;
 
+    @Setter
+    @Column(name = "hourly_rate", columnDefinition = "double precision default 0")
+    private Double hourlyRate = 0.0;
+
     public UserEntity(String email, String firstName, String lastName, String password) {
         this.email = email;
         this.firstName = firstName;

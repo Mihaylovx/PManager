@@ -13,6 +13,7 @@ public class UserMapper {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .hourlyRate(user.getHourlyRate())
                 .build();
     }
 
@@ -22,6 +23,7 @@ public class UserMapper {
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .password(dto.getPassword())
+                .hourlyRate(dto.getHourlyRate())
                 .build();
     }
 
@@ -31,15 +33,20 @@ public class UserMapper {
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
                 .password(entity.getPassword())
+                .hourlyRate(entity.getHourlyRate())
                 .build();
     }
 
     public static UserEntity toEntity(User user) {
-        return new UserEntity(
+        UserEntity entity = new UserEntity(
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getPassword()
         );
+        if (user.getHourlyRate() != null) {
+            entity.setHourlyRate(user.getHourlyRate());
+        }
+        return entity;
     }
 }

@@ -17,12 +17,30 @@ import {
   CardActionArea,
   Stack,
   AppBar,
-  Toolbar
+  Toolbar,
+  Badge,
+  Collapse,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  Tooltip,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from "@mui/material"
 import DeleteIcon from "@mui/icons-material/Delete"
 import AddIcon from "@mui/icons-material/Add"
 import FolderIcon from "@mui/icons-material/Folder"
 import LogoutIcon from "@mui/icons-material/Logout"
+import NotificationsIcon from "@mui/icons-material/Notifications"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
+import CancelIcon from "@mui/icons-material/Cancel"
+import GroupIcon from "@mui/icons-material/Group"
 import { getUser, clearUser } from "../auth"
 
 function Projects() {
@@ -35,10 +53,20 @@ function Projects() {
   const [inviteWarning, setInviteWarning] = useState(null)
   const [createError, setCreateError] = useState(null)
   const [loadError, setLoadError] = useState(null)
+
+  const [pendingInvites, setPendingInvites] = useState([])
+  const [showInvites, setShowInvites] = useState(false)
+  const [inviteActionMsg, setInviteActionMsg] = useState(null)
+
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, projectId: null, projectName: "" })
+
   const navigate = useNavigate()
   const user = getUser()
 
-  useEffect(() => { fetchProjects() }, [])
+  useEffect(() => {
+    fetchProjects()
+    fetchPendingInvites()
+  }, [])
 
   function fetchProjects() {
     fetch(`http://localhost:8080/api/projects?user=${encodeURIComponent(user.email)}`)
@@ -47,21 +75,37 @@ function Projects() {
       .catch(() => setLoadError("Failed to load projects. Is the server running?"))
   }
 
+  function fetchPendingInvites() {
+    fetch(`http://localhost:8080/api/invites?user=${encodeURIComponent(user.email)}`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setPendingInvites(data))
+      .catch(() => {})
+  }
+
+  async function handleInviteAction(inviteId, action) {
+    try {
+      const res = await fetch(`http://localhost:8080/api/invites/${inviteId}/${action}`, { method: "POST" })
+      if (!res.ok) throw new Error("Action failed")
+      setInviteActionMsg(action === "accept" ? "Invite accepted!" : "Invite declined.")
+      setTimeout(() => setInviteActionMsg(null), 3000)
+      fetchPendingInvites()
+      fetchProjects()
+    } catch {
+      setInviteActionMsg("Something went wrong.")
+    }
+  }
+
   function addInviteEmail() {
     const email = inviteInput.trim().toLowerCase()
     if (!email) return
     if (email === user.email.toLowerCase()) {
-      setInviteWarning("You're already the manager — no need to invite yourself.")
+      setInviteWarning("You're already the manager.")
       return
     }
     if (invitedEmails.includes(email)) return
     setInvitedEmails([...invitedEmails, email])
     setInviteInput("")
     setInviteWarning(null)
-  }
-
-  function removeInviteEmail(email) {
-    setInvitedEmails(invitedEmails.filter(e => e !== email))
   }
 
   async function addProject() {
@@ -71,21 +115,10 @@ function Projects() {
       const res = await fetch("http://localhost:8080/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description,
-          managerEmail: user.email,
-          memberEmails: invitedEmails
-        })
+        body: JSON.stringify({ name, description, managerEmail: user.email, memberEmails: invitedEmails })
       })
-      if (!res.ok) {
-        const msg = await res.text()
-        throw new Error(msg || "Failed to create project")
-      }
-      setName("")
-      setDescription("")
-      setInviteInput("")
-      setInvitedEmails([])
+      if (!res.ok) throw new Error(await res.text() || "Failed to create project")
+      setName(""); setDescription(""); setInviteInput(""); setInvitedEmails([])
       setShowForm(false)
       fetchProjects()
     } catch (err) {
@@ -93,10 +126,14 @@ function Projects() {
     }
   }
 
-  function deleteProject(id, e) {
+  function confirmDeleteProject(id, projectName, e) {
     e.stopPropagation()
-    fetch(`http://localhost:8080/api/projects/${id}`, { method: "DELETE" })
-      .then(() => fetchProjects())
+    setDeleteDialog({ open: true, projectId: id, projectName })
+  }
+
+  function executeDeleteProject() {
+    fetch(`http://localhost:8080/api/projects/${deleteDialog.projectId}`, { method: "DELETE" })
+      .then(() => { setDeleteDialog({ open: false, projectId: null, projectName: "" }); fetchProjects() })
   }
 
   function logout() {
@@ -104,97 +141,117 @@ function Projects() {
     navigate("/")
   }
 
-  function handleCardClick(projectId) {
-    navigate(`/project/${projectId}`)
+  function getTaskStats(project) {
+    const tasks = project.tasks || []
+    return {
+      total: tasks.length,
+      done: tasks.filter(t => t.status === "DONE").length,
+      inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
+      review: tasks.filter(t => t.status === "REVIEW").length,
+      todo: tasks.filter(t => !t.status || t.status === "TODO").length
+    }
   }
 
   return (
-    <Box>
+    <Box sx={{ minHeight: "100vh", bgcolor: "grey.50" }}>
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Project Manager</Typography>
+          <FolderIcon sx={{ mr: 1, color: "primary.main" }} />
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>Project Manager</Typography>
           <Typography variant="body2" sx={{ mr: 2 }} color="text.secondary">
             {user.firstName} {user.lastName}
           </Typography>
+          <Tooltip title={pendingInvites.length > 0 ? `${pendingInvites.length} pending invite(s)` : "No pending invites"}>
+            <IconButton color={pendingInvites.length > 0 ? "primary" : "inherit"}
+              onClick={() => setShowInvites(s => !s)} sx={{ mr: 1 }}>
+              <Badge badgeContent={pendingInvites.length} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
           <IconButton onClick={logout} color="inherit" title="Logout">
             <LogoutIcon />
           </IconButton>
         </Toolbar>
       </AppBar>
 
+      <Collapse in={showInvites && pendingInvites.length > 0}>
+        <Paper elevation={0} sx={{ borderRadius: 0, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Container maxWidth="lg" sx={{ py: 2 }}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>Project Invitations</Typography>
+            {inviteActionMsg && <Alert severity="info" sx={{ mb: 1 }}>{inviteActionMsg}</Alert>}
+            <List disablePadding>
+              {pendingInvites.map(invite => (
+                <ListItem key={invite.id} disablePadding
+                  sx={{ bgcolor: "background.paper", mb: 1, borderRadius: 2, border: "1px solid", borderColor: "primary.light", p: 1.5 }}
+                  secondaryAction={
+                    <Stack direction="row" spacing={1}>
+                      <Button size="small" variant="contained" color="success" startIcon={<CheckCircleIcon />}
+                        onClick={() => handleInviteAction(invite.id, "accept")}>Accept</Button>
+                      <Button size="small" variant="outlined" color="error" startIcon={<CancelIcon />}
+                        onClick={() => handleInviteAction(invite.id, "decline")}>Decline</Button>
+                    </Stack>
+                  }
+                >
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: "primary.main", width: 36, height: 36 }}>
+                      <FolderIcon fontSize="small" />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={<Typography fontWeight={600}>{invite.projectName}</Typography>}
+                    secondary={`Invited by ${invite.invitedByEmail}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Container>
+        </Paper>
+      </Collapse>
+
+      {pendingInvites.length > 0 && !showInvites && (
+        <Alert severity="info" action={<Button size="small" onClick={() => setShowInvites(true)}>View</Button>}
+          sx={{ borderRadius: 0 }}>
+          You have {pendingInvites.length} pending invitation{pendingInvites.length > 1 ? "s" : ""}.
+        </Alert>
+      )}
+
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
-          <Typography variant="h4" component="h1">Projects</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setShowForm(!showForm)}
-          >
+          <Typography variant="h4" fontWeight={700}>Projects</Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowForm(!showForm)}>
             New Project
           </Button>
         </Box>
 
         {showForm && (
-          <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-            <Typography variant="h6" gutterBottom>Create New Project</Typography>
+          <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
+            <Typography variant="h6" gutterBottom fontWeight={600}>Create New Project</Typography>
             <Stack spacing={2}>
-              <TextField
-                fullWidth
-                label="Project name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                autoFocus
-              />
-              <TextField
-                fullWidth
-                label="Description"
-                multiline
-                rows={3}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-              />
-
+              <TextField fullWidth label="Project name" value={name} onChange={e => setName(e.target.value)} autoFocus />
+              <TextField fullWidth label="Description (optional)" multiline rows={2}
+                value={description} onChange={e => setDescription(e.target.value)} />
               <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  Invite developers (by email)
-                </Typography>
+                <Typography variant="subtitle2" gutterBottom>Invite developers (optional)</Typography>
                 <Stack direction="row" spacing={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="email"
-                    placeholder="developer@example.com"
-                    value={inviteInput}
-                    onChange={e => setInviteInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        addInviteEmail()
-                      }
-                    }}
-                  />
+                  <TextField fullWidth size="small" type="email" placeholder="developer@example.com"
+                    value={inviteInput} onChange={e => setInviteInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addInviteEmail() } }} />
                   <Button onClick={addInviteEmail} variant="outlined">Add</Button>
                 </Stack>
                 {inviteWarning && <Alert severity="warning" sx={{ mt: 1 }}>{inviteWarning}</Alert>}
                 {invitedEmails.length > 0 && (
-                  <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  <Box sx={{ mt: 1.5, display: "flex", flexWrap: "wrap", gap: 1 }}>
                     {invitedEmails.map(email => (
-                      <Chip
-                        key={email}
-                        label={email}
-                        onDelete={() => removeInviteEmail(email)}
-                      />
+                      <Chip key={email} label={email} onDelete={() => setInvitedEmails(invitedEmails.filter(e => e !== email))} />
                     ))}
                   </Box>
                 )}
               </Box>
-
               {createError && <Alert severity="error">{createError}</Alert>}
               <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
                 <Button onClick={() => { setShowForm(false); setCreateError(null) }}>Cancel</Button>
-                <Button variant="contained" onClick={addProject} disabled={!name}>
-                  Create Project
-                </Button>
+                <Button variant="contained" onClick={addProject} disabled={!name}>Create</Button>
               </Box>
             </Stack>
           </Paper>
@@ -202,73 +259,68 @@ function Projects() {
 
         {loadError && <Alert severity="error" sx={{ mb: 2 }}>{loadError}</Alert>}
         {!loadError && projects.length === 0 && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            No projects yet. Click "New Project" to create one.
-          </Alert>
+          <Alert severity="info">No projects yet. Click "New Project" to create one.</Alert>
         )}
 
         <Grid container spacing={3}>
           {projects.map(project => {
             const isManager = project.managerEmail === user.email
+            const stats = getTaskStats(project)
+            const memberCount = project.memberEmails?.length || 0
+
             return (
               <Grid item xs={12} sm={6} md={4} key={project.id}>
-                <Card
-                  sx={{
-                    height: 240,
-                    width: 300,
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: 6
-                    }
-                  }}
-                >
-                  <CardActionArea onClick={() => handleCardClick(project.id)}>
+                <Card sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  "&:hover": { transform: "translateY(-4px)", boxShadow: 8 }
+                }}>
+                  <CardActionArea onClick={() => navigate(`/project/${project.id}`)} sx={{ flexGrow: 1 }}>
                     <CardContent>
-                      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                        <FolderIcon sx={{ mr: 1, color: "primary.main" }} />
-                        <Typography variant="h6" component="h2" noWrap>
+                      <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1.5 }}>
+                        <FolderIcon sx={{ mr: 1, color: "primary.main", mt: 0.3, flexShrink: 0 }} />
+                        <Typography variant="h6" fontWeight={600} sx={{ lineHeight: 1.3 }}>
                           {project.name}
                         </Typography>
                       </Box>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          minHeight: "40px"
-                        }}
-                      >
-                        {project.description || "No description provided."}
+
+                      <Typography variant="body2" color="text.secondary" sx={{
+                        overflow: "hidden", textOverflow: "ellipsis",
+                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                        minHeight: 40, mb: 2
+                      }}>
+                        {project.description || "No description."}
                       </Typography>
-                      <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", gap: 1 }}>
+
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        <Chip label={isManager ? "Manager" : "Developer"} size="small"
+                          color={isManager ? "primary" : "default"} />
                         <Chip
-                          label={isManager ? "Manager" : "Developer"}
-                          size="small"
-                          color={isManager ? "primary" : "default"}
+                          icon={<GroupIcon sx={{ fontSize: "14px !important" }} />}
+                          label={`${memberCount + 1}`}
+                          size="small" variant="outlined"
+                          title={`${memberCount + 1} team member${memberCount + 1 !== 1 ? "s" : ""}`}
                         />
-                        <Chip
-                          label={`Tasks: ${project.tasks?.length || 0}`}
-                          size="small"
-                        />
+                        <Chip label={`${stats.done}/${stats.total} done`} size="small" variant="outlined" />
                       </Stack>
                     </CardContent>
                   </CardActionArea>
-                  <CardActions sx={{ justifyContent: "flex-end", p: 1 }}>
+
+                  <Divider />
+                  <CardActions sx={{ justifyContent: "space-between", px: 2, py: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {stats.inProgress > 0 ? `${stats.inProgress} in progress` : stats.total === 0 ? "No tasks" : `${stats.todo} to do`}
+                    </Typography>
                     {isManager && (
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={(e) => deleteProject(project.id, e)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      <Tooltip title="Delete project">
+                        <IconButton size="small" color="error"
+                          onClick={e => confirmDeleteProject(project.id, project.name, e)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     )}
                   </CardActions>
                 </Card>
@@ -277,6 +329,20 @@ function Projects() {
           })}
         </Grid>
       </Container>
+
+      <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, projectId: null, projectName: "" })}>
+        <DialogTitle>Delete Project?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete <strong>"{deleteDialog.projectName}"</strong>?
+            This will permanently delete the project and all its tasks.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, projectId: null, projectName: "" })}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={executeDeleteProject}>Delete</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

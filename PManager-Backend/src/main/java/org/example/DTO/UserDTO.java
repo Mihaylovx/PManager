@@ -24,4 +24,6 @@ public class UserDTO {
 
     @Size(min = 6, max = 100, message = "Password must be at least 6 characters.")
     private String password;
+
+    private Double hourlyRate;
 }

@@ -54,8 +54,8 @@ public class TaskController {
     }
 
     @PatchMapping("/{taskId}")
-    public ResponseEntity<TaskDTO> updateTaskStatus(@PathVariable Long id, @PathVariable Long taskId, @RequestBody TaskDTO taskDTO) {
-        return taskService.updateTaskStatus(id, taskId, taskDTO.isCompleted())
+    public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @PathVariable Long taskId, @RequestBody TaskDTO taskDTO) {
+        return taskService.updateTask(id, taskId, taskDTO.getStatus(), taskDTO.getHoursWorked(), taskDTO.getAssignedTo())
                 .map(TaskMapper::toDTO)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

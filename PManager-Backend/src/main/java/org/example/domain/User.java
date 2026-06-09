@@ -14,4 +14,6 @@ public class User {
     private String lastName;
     @Setter
     private String password;
+    @Setter
+    private Double hourlyRate;
 }

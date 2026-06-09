@@ -9,4 +9,5 @@ public interface UserService {
     Optional<User> login(String email, String password);
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
+    Optional<User> updateHourlyRate(String email, Double hourlyRate);
 }
